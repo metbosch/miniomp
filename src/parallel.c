@@ -24,8 +24,16 @@ void
 GOMP_parallel (void (*fn) (void *), void *data, unsigned num_threads, unsigned int flags) {
   if(!num_threads) num_threads = omp_get_num_threads();
   printf("Starting a parallel region using %d threads\n", num_threads);
-  for (int i=0; i<num_threads; i++)
-      fn (data);
+  miniomp_parallel_t *local_parallel = (miniomp_parallel_t *)malloc(sizeof(miniomp_parallel_t));
+  // TODO: add to global parallel the new region
+  local_parallel->threads = miniomp_threads;
+  local_parallel->fn_data = data;
+  local_parallel->fn = fn;
+  local_parallel->id = 1; //Now only supporting one parallel region
+  for (int i=1; i<num_threads; i++) {
+      //fn (data);
+    CHECK_ERR( pthread_create(local_parallel->threads[i], NULL, worker, NULL), 0 );
+  }
 }
 
 // When using the following splitted interface, the master invokes foo after returning from GOMP_parallel_start

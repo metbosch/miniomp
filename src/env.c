@@ -14,6 +14,7 @@ void parse_env(void) {
       else miniomp_icv.nthreads_var = procs;
     } else {
       miniomp_icv.nthreads_var = atoi(env);
+      miniomp_icv.nthreads_var = (miniomp_icv.nthreads_var > 0 ? miniomp_icv.nthreads_var : 1);
     }
     printf("Setting nthreads_var ICV to %d\n", miniomp_icv.nthreads_var);
 }

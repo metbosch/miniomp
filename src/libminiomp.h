@@ -51,6 +51,7 @@ typedef struct {
     void *fn_data;
     int id;
     // complete the definition of parallel descriptor
+    pthread_t *threads;		// Threads associated to this parallel region
 } miniomp_parallel_t;
 
 extern miniomp_parallel_t *miniomp_parallel;
