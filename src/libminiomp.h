@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <pthread.h>
 #include "barrier.h"
+#include "workdescriptor.h"
 
 #define MAX_THREADS 32
 
@@ -49,13 +50,12 @@ extern unsigned miniomp_thread_count;
 // Type declaration for parallel descriptor (arguments needed to create pthreads)
 //typedef struct miniomp_parallel_struct miniomp_parallel_t;
 struct miniomp_parallel_struct {
-    void (*fn) (void *);
-    void *fn_data;
     int id;
     // complete the definition of parallel descriptor
+    miniomp_wd_t wd;
     pthread_t *threads;		// Threads associated to this parallel region
-    miniomp_parallel_t *next;	// Pointer to next parallel region
-    miniomp_barrier_t *barrier;   // Barrier for this parallel region
+    unsigned num_threads;
+    miniomp_barrier_t barrier;   // Barrier for this parallel region
 };
 
 extern miniomp_parallel_t *miniomp_parallel;

@@ -15,6 +15,15 @@ void wait_pthread_barrier(pthread_barrier_t *barrier) {
   }
 }
 
+void init_custom_barrier(miniomp_barrier_t *barrier, unsigned count) {
+}
+
+void destroy_custom_barrier(miniomp_barrier_t *barrier) {
+}
+
+void wait_barrier_wait(miniomp_barrier_t *barrier) {
+}
+
 void miniomp_barrier_init(miniomp_barrier_t *restrict barrier, unsigned count) {
   init_pthread_barrier((pthread_barrier_t *)barrier, count);
 }
