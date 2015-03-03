@@ -2,23 +2,22 @@
 #include "intrinsic.h"
 #include <pthread.h>
 
-// Default lock for critical sections
-pthread_mutex_t miniomp_default_lock;
-
 void GOMP_critical_start (void) {
-  printf("TBI: Entering an unnamed critical, don't know if anyone else is alrady in. I proceed\n");
+   // printf("Critical_start begin\n");
+    miniomp_specifickey_ptr info = (miniomp_specifickey_ptr)(pthread_getspecific(miniomp_specifickey));
+    CHECK_ERR( pthread_mutex_lock(&info->parallel_region->mutex), 0 );
+   // printf("Critical_start end\n");
 }
 
 void GOMP_critical_end () {
-  printf("Exiting an unnamed critical section. I can not inform anyone else\n");
+    miniomp_specifickey_ptr info = (miniomp_specifickey_ptr)(pthread_getspecific(miniomp_specifickey));
+    CHECK_ERR( pthread_mutex_unlock(&info->parallel_region->mutex), 0 );
+
 }
 
-#if MYBARRIER
-mybarrier_t mybarrier;
-#else
-pthread_barrier_t miniomp_barrier;
-#endif
-
 void GOMP_barrier() {
-  printf("TBI: Entering in barrier, but do not know how to wait for the rest. I proceed\n");
+    miniomp_specifickey_ptr info = (miniomp_specifickey_ptr)(pthread_getspecific(miniomp_specifickey));
+   // printf("%d\tBarrier begin\n", info->id);
+    miniomp_barrier_wait(&info->parallel_region->barrier);
+   // printf("%d\tBarrier end\n", info->id);
 }

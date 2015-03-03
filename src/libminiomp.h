@@ -39,14 +39,6 @@ typedef miniomp_specifickey_t * miniomp_specifickey_ptr;
 // declaration of per-thread specific key
 extern pthread_key_t miniomp_specifickey;
 
-// Default lock for critical sections
-extern pthread_mutex_t miniomp_default_lock;
-
-// Declaration of array for storing pthread identifier from pthread_create function
-// NOT USED
-//extern pthread_t *miniomp_threads;
-extern unsigned miniomp_thread_count;
-
 // Type declaration for parallel descriptor (arguments needed to create pthreads)
 //typedef struct miniomp_parallel_struct miniomp_parallel_t;
 struct miniomp_parallel_struct {
@@ -55,12 +47,15 @@ struct miniomp_parallel_struct {
     miniomp_wd_t wd;
     pthread_t *threads;		// Threads associated to this parallel region
     unsigned num_threads;
-    miniomp_barrier_t barrier;   // Barrier for this parallel region
+    miniomp_barrier_t barrier;  // Barrier for this parallel region
+    pthread_mutex_t mutex;      // Mutex fot critical regions
 };
 
 extern miniomp_parallel_t *miniomp_parallel;
 extern pthread_mutex_t *miniomp_parallel_mutex;
 extern unsigned miniomp_parallel_count;
+extern unsigned miniomp_thread_count;
+
 
 // Type declaration for loop worksharing descriptor
 typedef struct {

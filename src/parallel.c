@@ -35,7 +35,8 @@ miniomp_parallel_t *new_miniomp_parallel_t(void (*fn) (void *), void *data, unsi
   ret->threads = (pthread_t *)(malloc(sizeof(pthread_t)*num_threads));
   miniomp_wd_init(&ret->wd, fn, data);
   miniomp_barrier_init(&ret->barrier, num_threads);
- 
+  CHECK_ERR( pthread_mutex_init(&ret->mutex, NULL), 0 );
+
   CHECK_ERR( pthread_mutex_lock(miniomp_parallel_mutex), 0 );
   ret->id = ++miniomp_parallel_count;
   *first_thread_id = miniomp_thread_count + 1;
@@ -56,6 +57,13 @@ miniomp_parallel_t *new_miniomp_parallel_t(void (*fn) (void *), void *data, unsi
   CHECK_ERR( pthread_mutex_unlock(miniomp_parallel_mutex), 0 );
  
   return ret;
+}
+
+void destroy_miniomp_parallel_t(miniomp_parallel_t *region) {
+  miniomp_barrier_destroy(&region->barrier);
+  CHECK_ERR( pthread_mutex_destroy(&region->mutex), 0 );
+  free(region->threads);
+  free(region);
 }
 
 void miniomp_parallel_create_threads(miniomp_parallel_t *region, unsigned first_thread_id) {
@@ -94,7 +102,7 @@ GOMP_parallel (void (*fn) (void *), void *data, unsigned num_threads, unsigned i
   miniomp_parallel_create_threads(local_parallel, first_thread_id);
   miniomp_parallel_switch_to(local_parallel);
   miniomp_parallel_join_threads(local_parallel);
-  free(local_parallel);
+  destroy_miniomp_parallel_t(local_parallel);
 }
 
 // When using the following splitted interface, the master invokes foo after returning from GOMP_parallel_start
