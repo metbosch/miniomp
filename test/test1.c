@@ -23,8 +23,10 @@ int foo() {
         second++;
 }
 #pragma omp parallel
+{
+  #pragma omp parallel num_threads(3)
     printf("Thread %d finished the execution of foo\n", omp_get_thread_num());
-
+}
     return(x);
 }
 

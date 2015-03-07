@@ -14,11 +14,12 @@ void destroy_pthread_barrier(pthread_barrier_t *barrier) {
 #endif
 
 #if !MYBARRIER
-void wait_pthread_barrier(pthread_barrier_t *barrier) {
+unsigned char wait_pthread_barrier(pthread_barrier_t *barrier) {
   int ret = pthread_barrier_wait(barrier);
   if (ret != 0 && ret != PTHREAD_BARRIER_SERIAL_THREAD) {
     exit(ret);
   }
+  return (ret == PTHREAD_BARRIER_SERIAL_THREAD);
 }
 #endif
 
@@ -41,7 +42,7 @@ void destroy_custom_barrier(miniomp_barrier_t *barrier) {
 #endif
 
 #if MYBARRIER
-void wait_custom_barrier(miniomp_barrier_t *barrier) {
+unsigned char wait_custom_barrier(miniomp_barrier_t *barrier) {
   CHECK_ERR( pthread_mutex_lock(&barrier->mutex), 0 );
   barrier->count++;
   unsigned char local_flag = barrier->flag;
@@ -50,12 +51,13 @@ void wait_custom_barrier(miniomp_barrier_t *barrier) {
     barrier->flag ^= 1;
     __sync_synchronize();
     CHECK_ERR( pthread_mutex_unlock(&barrier->mutex), 0 );
-    return;
+    return 1;
   }
   CHECK_ERR( pthread_mutex_unlock(&barrier->mutex), 0 );
   while(barrier->flag == local_flag) {
      __sync_synchronize();
   }
+  return 0;
 }
 #endif
 
@@ -75,11 +77,11 @@ void miniomp_barrier_destroy(miniomp_barrier_t *barrier) {
 #endif
 }
 
-void miniomp_barrier_wait(miniomp_barrier_t *barrier) {
+unsigned char miniomp_barrier_wait(miniomp_barrier_t *barrier) {
 #if MYBARRIER
-  wait_custom_barrier(barrier);
+  return wait_custom_barrier(barrier);
 #else
-  wait_pthread_barrier((pthread_barrier_t *)barrier);
+  return wait_pthread_barrier((pthread_barrier_t *)barrier);
 #endif
 }
 

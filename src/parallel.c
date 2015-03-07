@@ -2,6 +2,7 @@
 #include "intrinsic.h"
 #include "barrier.h"
 #include "workdescriptor.h"
+#include "specifickey.h"
 
 // This file handles the PARALLEL construct
 
@@ -14,16 +15,14 @@ pthread_mutex_t *miniomp_parallel_mutex;
 unsigned miniomp_parallel_count;
 unsigned miniomp_thread_count;
 
-// declaration of per-thread specific key
-pthread_key_t miniomp_specifickey;
-
 // This is the prototype for the Pthreads starting function
 void *worker(void *args) {
   // insert all necessary code here for:
   //   1) save thread-specific data
-  pthread_setspecific(miniomp_specifickey, args);
+  miniomp_set_thread_specifickey((miniomp_specifickey_t *)(args));
+  //printf("Starting thread num %d\n", omp_get_thread_num());
   //   2) invoke the per-threads instance of function encapsulating the parallel region
-  miniomp_wd_run(&((miniomp_specifickey_ptr)args)->parallel_region->wd);
+  miniomp_wd_run(&((miniomp_specifickey_t *)args)->parallel_region->wd);
   //   3) exit the function
   pthread_exit(NULL);
 }
@@ -33,13 +32,16 @@ miniomp_parallel_t *new_miniomp_parallel_t(void (*fn) (void *), void *data, unsi
  
   ret->num_threads = num_threads;
   ret->threads = (pthread_t *)(malloc(sizeof(pthread_t)*num_threads));
+  ret->single_count = 0;
+  ret->loop = NULL;
   miniomp_wd_init(&ret->wd, fn, data);
   miniomp_barrier_init(&ret->barrier, num_threads);
   CHECK_ERR( pthread_mutex_init(&ret->mutex, NULL), 0 );
+  CHECK_ERR( pthread_mutex_init(&ret->loop_mutex, NULL), 0 );
 
   CHECK_ERR( pthread_mutex_lock(miniomp_parallel_mutex), 0 );
   ret->id = ++miniomp_parallel_count;
-  *first_thread_id = miniomp_thread_count + 1;
+  *first_thread_id = miniomp_thread_count;
   miniomp_thread_count += num_threads - 1;
   /*if (miniomp_parallel == NULL) {
     miniomp_parallel = ret;
@@ -69,9 +71,7 @@ void destroy_miniomp_parallel_t(miniomp_parallel_t *region) {
 void miniomp_parallel_create_threads(miniomp_parallel_t *region, unsigned first_thread_id) {
   region->threads[0] = pthread_self();
   for (int i = 1; i < region->num_threads; i++) {
-    miniomp_specifickey_ptr args = (miniomp_specifickey_ptr)malloc(sizeof(miniomp_specifickey_t));
-    args->id = first_thread_id++;
-    args->parallel_region = region;
+    miniomp_specifickey_t *args = new_miniomp_specifickey_t(first_thread_id++, region);
     CHECK_ERR( pthread_create(&region->threads[i], NULL, worker, (void *)args), 0 );
   }
 }
@@ -83,19 +83,17 @@ void miniomp_parallel_join_threads(miniomp_parallel_t *region) {
 }
 
 void miniomp_parallel_switch_to(miniomp_parallel_t *region) {
-  miniomp_specifickey_ptr prev = (miniomp_specifickey_ptr)pthread_getspecific(miniomp_specifickey);
-  miniomp_specifickey_t next = { // Same threadID and new parallel region
-    id: prev->id,
-    parallel_region: region
-  };
-  pthread_setspecific(miniomp_specifickey, (void *)(&next));
+  miniomp_specifickey_t *prev = miniomp_get_thread_specifickey();
+  miniomp_specifickey_t *next = new_miniomp_specifickey_t(prev->id, region);
+  miniomp_set_thread_specifickey(next);
   miniomp_wd_run(&region->wd);
-  pthread_setspecific(miniomp_specifickey, (void *)prev);
+  miniomp_set_thread_specifickey(prev);
+  destroy_miniomp_specifickey_t(next);
 }
 
 void
 GOMP_parallel (void (*fn) (void *), void *data, unsigned num_threads, unsigned int flags) {
-  if(!num_threads) num_threads = omp_get_num_threads();
+  if(!num_threads) num_threads = miniomp_icv.nthreads_var;
  // printf("Starting a parallel region using %d threads\n", num_threads);
   unsigned first_thread_id;
   miniomp_parallel_t *local_parallel = new_miniomp_parallel_t(fn, data, num_threads, flags, &first_thread_id);

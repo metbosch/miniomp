@@ -1,8 +1,38 @@
 #include "libminiomp.h"
 #include "intrinsic.h"
+#include "loop.h"
+#include "single.h"
+#include "specifickey.h"
 
-// Declaratiuon of global variable for loop work descriptor
-miniomp_loop_t miniomp_loop;
+#define MIN(x, y) ((y) ^ (((x) ^ (y)) & -((x) < (y))))
+
+miniomp_loop_t * new_miniomp_loop_t(long start, long end, long incr, long chunk_size, int schedule) {
+  miniomp_loop_t *ret = (miniomp_loop_t *)(malloc(sizeof(miniomp_loop_t)));
+  ret->start = start;
+  ret->end = end;
+  ret->incr = incr;
+  ret->schedule = schedule;
+  ret->chunk_size = chunk_size;
+  ret->next = start;
+  ret->end_count = 0;
+  return ret;
+}
+
+void destroy_miniomp_loop_t(miniomp_loop_t * loop) {
+  if (loop->next < loop->end) {
+    printf("ERROR: Trying to destroy a loop structure with work (next: %lu, end: %lu)\n", loop->next, loop->end);
+  }
+  free(loop);
+}
+
+bool miniomp_loop_dynamic_next(long *istart, long *iend) {
+  miniomp_parallel_t *region = miniomp_get_thread_specifickey()->parallel_region; 
+  long increment = (region->loop->incr * region->loop->chunk_size);
+  *istart = __sync_fetch_and_add(&region->loop->next, increment);
+  *iend = *istart + increment;
+  *iend = MIN(*iend, (region->loop->end));
+  return(*istart < (region->loop->end));
+}
 
 /* The *_next routines are called when the thread completes processing of 
    the iteration block currently assigned to it.  If the work-share 
@@ -16,8 +46,7 @@ miniomp_loop_t miniomp_loop;
 
 bool
 GOMP_loop_dynamic_next (long *istart, long *iend) {
-  printf("TBI: Asking for more iterations? I gave you all at the beginning, no more left ...\n");
-  return(false);
+  return miniomp_loop_dynamic_next(istart, iend);
 }
 
 /* The *_start routines are called when first encountering a loop construct
@@ -25,7 +54,7 @@ GOMP_loop_dynamic_next (long *istart, long *iend) {
    that arrives will create the work-share construct; subsequent threads
    will see the construct exists and allocate work from it.
 
-   START, END, INCR are the bounds of the loop; CHUNK_SIZE is the
+   NSTART, END, INCR are the bounds of the loop; CHUNK_SIZE is the
    scheduling parameter. 
 
    Returns true if there's any work for this thread to perform.  If so,
@@ -37,10 +66,13 @@ bool
 GOMP_loop_dynamic_start (long start, long end, long incr, long chunk_size,
                          long *istart, long *iend)
 {
-  printf("TBI: What a mess! Starting a non-static for worksharing construct and dont know what to do, I'll take it all\n");
-  *istart = start;
-  *iend = end;
-  return(true);
+  miniomp_parallel_t *region = miniomp_get_thread_specifickey()->parallel_region;
+  if (miniomp_single_first()) {
+    region->loop = new_miniomp_loop_t(start, end, incr, chunk_size, ws_DYNAMIC);
+    __sync_synchronize();
+  }
+  miniomp_barrier_wait(&region->barrier);
+  return miniomp_loop_dynamic_next(istart, iend);
 }
 
 /* The GOMP_loop_end* routines are called after the thread is told that
@@ -49,10 +81,24 @@ GOMP_loop_dynamic_start (long start, long end, long incr, long chunk_size,
 
 void
 GOMP_loop_end (void) {
-  printf("TBI: Finishing a for worksharing construct with non static schedule\n");
+  miniomp_parallel_t *region = miniomp_get_thread_specifickey()->parallel_region; 
+  if (miniomp_barrier_wait(&region->barrier)) {
+    destroy_miniomp_loop_t(region->loop);
+    region->loop = NULL;
+    __sync_synchronize();
+  } else {
+    while (region->loop != NULL) {
+      __sync_synchronize();
+    }
+  }
 }
 
 void
 GOMP_loop_end_nowait (void) {
-  printf("TBI: Finishing a for worksharing construct with non static schedule, with nowait clause\n");
+  if (miniomp_single_last()) {
+    miniomp_parallel_t *region = miniomp_get_thread_specifickey()->parallel_region;
+    destroy_miniomp_loop_t(region->loop);
+    region->loop = NULL;
+    __sync_synchronize();
+  }
 }

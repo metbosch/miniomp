@@ -8,7 +8,7 @@ miniomp_taskqueue_t *init_task_queue(int max_elements) {
 }
 
 // Checks if the task descriptor is valid
-bool is_valid(miniomp_task_t *task_descriptor) {
+bool is_valid(miniomp_wd_t *task_descriptor) {
     return false;
 }
 
@@ -23,7 +23,7 @@ bool is_full(miniomp_taskqueue_t *task_queue) {
 }
 
 // Enqueues the task descriptor at the tail of the task queue
-bool enqueue(miniomp_taskqueue_t *task_queue, miniomp_task_t *task_descriptor) {
+bool enqueue(miniomp_taskqueue_t *task_queue, miniomp_wd_t *task_descriptor) {
     return true;
 }
 
@@ -33,7 +33,7 @@ bool dequeue(miniomp_taskqueue_t *task_queue) {
 }
 
 // Returns the task descriptor at the head of the task queue
-miniomp_task_t *first(miniomp_taskqueue_t *task_queue) {
+miniomp_wd_t *first(miniomp_taskqueue_t *task_queue) {
     return NULL;
 }
 
