@@ -71,7 +71,7 @@ void destroy_miniomp_parallel_t(miniomp_parallel_t *region) {
 void miniomp_parallel_create_threads(miniomp_parallel_t *region, unsigned first_thread_id) {
   region->threads[0] = pthread_self();
   for (int i = 1; i < region->num_threads; i++) {
-    miniomp_specifickey_t *args = new_miniomp_specifickey_t(first_thread_id++, region);
+    miniomp_specifickey_t *args = new_miniomp_specifickey_t(i, region);
     CHECK_ERR( pthread_create(&region->threads[i], NULL, worker, (void *)args), 0 );
   }
 }
@@ -84,7 +84,7 @@ void miniomp_parallel_join_threads(miniomp_parallel_t *region) {
 
 void miniomp_parallel_switch_to(miniomp_parallel_t *region) {
   miniomp_specifickey_t *prev = miniomp_get_thread_specifickey();
-  miniomp_specifickey_t *next = new_miniomp_specifickey_t(prev->id, region);
+  miniomp_specifickey_t *next = new_miniomp_specifickey_t(0, region);
   miniomp_set_thread_specifickey(next);
   miniomp_wd_run(&region->wd);
   miniomp_set_thread_specifickey(prev);
