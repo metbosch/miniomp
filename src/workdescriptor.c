@@ -5,8 +5,7 @@
 
 miniomp_wd_t *new_miniomp_wd(void (*fn) (void *), void *fn_data) {
     miniomp_wd_t * ret = (miniomp_wd_t *)(malloc(sizeof(miniomp_wd_t)));
-    ret->fn = fn;
-    ret->fn_data = fn_data;
+    miniomp_wd_init(ret, fn, fn_data);
     return ret;
 }
 
