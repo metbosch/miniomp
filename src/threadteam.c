@@ -9,13 +9,13 @@
 // Structures definition
 /*struct miniomp_thread_struct {
   pthread_t pthread;
-};
+}*/;
 
 struct miniomp_thread_team_struct {
   unsigned num_threads;
   miniomp_thread_t *threads;
   miniomp_atomic_queue_t queue;
-};*/
+};
 
 void miniomp_thread_team_init(miniomp_thread_team_t *team, unsigned num_threads) {
   team->num_threads = num_threads;
@@ -25,6 +25,19 @@ void miniomp_thread_team_init(miniomp_thread_team_t *team, unsigned num_threads)
 
 void miniomp_thread_team_destroy(miniomp_thread_team_t *team) {
   miniomp_atomic_queue_destroy(&team->queue);
+  free(team->threads);
+}
+
+miniomp_thread_team_t *new_miniomp_thread_team_t(unsigned num_threads) {
+  miniomp_thread_team_t *ret = (miniomp_thread_team_t *)(malloc(sizeof(miniomp_thread_team_t)));
+  miniomp_thread_team_init(ret, num_threads);
+  return ret;
+}
+
+void destroy_miniomp_thread_team_t(miniomp_thread_team_t *team) {
+  miniomp_thread_team_destroy(team);
+  free(team);
+  //team = NULL;
 }
 
 // This is the prototype for the Pthreads starting function
@@ -58,7 +71,12 @@ unsigned miniomp_thread_team_get_num_threads(miniomp_thread_team_t *team) {
   return team->num_threads;
 }
 
-void miniomp_push_task(miniomp_thread_team_t *team, miniomp_wd_t *task) {
+void miniomp_thread_team_push_task(miniomp_thread_team_t *team, miniomp_wd_t *task) {
+  miniomp_atomic_queue_push(&team->queue, (void *)(task));
+}
+
+miniomp_wd_t *miniomp_thread_team_pop_task(miniomp_thread_team_t *team) {
+  return miniomp_atomic_queue_pop(&team->queue);
 }
 
 #endif

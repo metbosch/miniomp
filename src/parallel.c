@@ -11,7 +11,7 @@ struct miniomp_parallel_struct {
     int id;
     // complete the definition of parallel descriptor
     miniomp_wd_t wd;
-    miniomp_thread_team_t team; // Team of threads for this region
+    miniomp_thread_team_t* team; // Team of threads for this region
     miniomp_barrier_t barrier;  // Barrier for this parallel region
     pthread_mutex_t mutex;      // Mutex for critical regions
     unsigned single_count;      // Counter for single regions
@@ -30,7 +30,8 @@ miniomp_parallel_t *new_miniomp_parallel_t(void (*fn) (void *), void *data, unsi
  
   ret->single_count = 0;
   ret->loop = NULL;
-  miniomp_thread_team_init(&ret->team, num_threads);
+  ret->team = new_miniomp_thread_team_t(num_threads);
+  //miniomp_thread_team_init(&ret->team, num_threads);
   miniomp_wd_init(&ret->wd, fn, data);
   miniomp_barrier_init(&ret->barrier, num_threads);
   CHECK_ERR( pthread_mutex_init(&ret->mutex, NULL), 0 );
@@ -59,18 +60,18 @@ miniomp_parallel_t *new_miniomp_parallel_t(void (*fn) (void *), void *data, unsi
 }
 
 void destroy_miniomp_parallel_t(miniomp_parallel_t *region) {
-  miniomp_thread_team_destroy(&region->team);
+  destroy_miniomp_thread_team_t(region->team);
   miniomp_barrier_destroy(&region->barrier);
   CHECK_ERR( pthread_mutex_destroy(&region->mutex), 0 );
   free(region);
 }
 
 void miniomp_parallel_create_threads(miniomp_parallel_t *region) {
-  miniomp_thread_team_start(&region->team, region);
+  miniomp_thread_team_start(region->team, region);
 }
 
 void miniomp_parallel_join_threads(miniomp_parallel_t *region) {
-  miniomp_thread_team_join(&region->team, 0);
+  miniomp_thread_team_join(region->team, 0);
 }
 
 void miniomp_parallel_switch_to(miniomp_parallel_t *region) {
@@ -83,7 +84,7 @@ void miniomp_parallel_switch_to(miniomp_parallel_t *region) {
 }
 
 unsigned miniomp_parallel_get_num_threads(miniomp_parallel_t *region) {
-  return (miniomp_thread_team_get_num_threads(&region->team));
+  return (miniomp_thread_team_get_num_threads(region->team));
 }
 
 void miniomp_parallel_mutex_lock(miniomp_parallel_t *region) {
@@ -108,6 +109,10 @@ miniomp_loop_t **miniomp_parallel_get_loop(miniomp_parallel_t *region) {
 
 miniomp_wd_t *miniomp_parallel_get_wd(miniomp_parallel_t *region) {
   return &region->wd;
+}
+
+miniomp_thread_team_t *miniomp_parallel_get_team(miniomp_parallel_t *region) {
+  return region->team;
 }
 
 void

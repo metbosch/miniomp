@@ -3,8 +3,9 @@
 #include <stdbool.h>
 #include "loop.h"
 #include "workdescriptor.h"
+#include "threadteam.h"
 
-typedef struct miniomp_parallel_struct miniomp_parallel_t;
+//typedef struct miniomp_parallel_struct miniomp_parallel_t;
 
 /*typedef struct miniomp_parallel_struct {
     int id;
@@ -31,5 +32,7 @@ unsigned *miniomp_parallel_get_single_count(miniomp_parallel_t *region);
 miniomp_loop_t **miniomp_parallel_get_loop(miniomp_parallel_t *region);
 
 miniomp_wd_t *miniomp_parallel_get_wd(miniomp_parallel_t *region);
+
+miniomp_thread_team_t *miniomp_parallel_get_team(miniomp_parallel_t *region);
 
 #endif

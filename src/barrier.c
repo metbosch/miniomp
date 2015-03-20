@@ -1,5 +1,7 @@
 #include "barrier.h"
 #include "libminiomp.h"
+#include "parallel.h"
+#include "specifickey.h"
 
 #if !MYBARRIER
 void init_pthread_barrier(pthread_barrier_t *barrier, unsigned count) {
@@ -44,6 +46,14 @@ void destroy_custom_barrier(miniomp_barrier_t *barrier) {
 #if MYBARRIER
 bool wait_custom_barrier(miniomp_barrier_t *barrier) {
   DEBUG("Entering in a barrier");
+  miniomp_thread_team_t *team = miniomp_parallel_get_team(miniomp_get_thread_specifickey()->parallel_region);
+  miniomp_wd_t *work = miniomp_thread_team_pop_task(team);
+  while (work != NULL) {
+    miniomp_wd_run(work);
+    destroy_miniomp_wd_t(work);
+    work = miniomp_thread_team_pop_task(team);
+  }
+ 
   CHECK_ERR( pthread_mutex_lock(&barrier->mutex), 0 );
   barrier->count++;
   unsigned char local_flag = barrier->flag;

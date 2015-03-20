@@ -3,6 +3,7 @@
 #include "loop.h"
 #include "single.h"
 #include "specifickey.h"
+#include "parallel.h"
 
 #define MIN(x, y) ((y) ^ (((x) ^ (y)) & -((x) < (y))))
 

@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <pthread.h>
-#include "parallel.h"
+//#include "parallel.h"
 
 #define MAX_THREADS 32
 
@@ -24,7 +24,11 @@ typedef struct {
 
 extern miniomp_icv_t miniomp_icv;
 
-extern miniomp_parallel_t *miniomp_parallel;
+// Forward of types declaration
+typedef struct miniomp_parallel_struct miniomp_parallel_t;
+typedef struct miniomp_thread_team_struct miniomp_thread_team_t;
+
+//extern miniomp_parallel_t *miniomp_parallel;
 extern pthread_mutex_t *miniomp_parallel_mutex;
 extern unsigned miniomp_parallel_count;
 extern unsigned miniomp_thread_count;
