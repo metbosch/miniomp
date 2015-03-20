@@ -3,6 +3,12 @@
 #include <pthread.h>
 #include "atomicqueue.h"
 #include "libminiomp.h"
+#include "workdescriptor.h"
+#include "parallel.h"
+
+//typedef struct miniomp_thread_struct miniomp_thread_t;
+
+//typedef struct miniomp_thread_team_struct miniomp_thread_team_t;
 
 typedef struct {
   pthread_t pthread;
@@ -21,6 +27,8 @@ void miniomp_thread_team_destroy(miniomp_thread_team_t *team);
 void miniomp_thread_team_start(miniomp_thread_team_t *team, miniomp_parallel_t *region);
 
 void miniomp_thread_team_join(miniomp_thread_team_t *team, int self);
+
+unsigned miniomp_thread_team_get_num_threads(miniomp_thread_team_t *team);
 
 void miniomp_push_task(miniomp_thread_team_t *team, miniomp_wd_t *task);
 

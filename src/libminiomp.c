@@ -17,6 +17,17 @@ void CHECK_ERR(int result, int expected) {
   }
 }
 
+int miniomp_debug_atomic = 0;
+void DEBUG(char *str) {
+  if (miniomp_icv.debug_enabled) {
+    while (!(__sync_bool_compare_and_swap(&miniomp_debug_atomic, 0, 1)));
+    printf("%d:\t", miniomp_get_thread_specifickey()->id);
+    printf(str);
+    printf("\n");
+    miniomp_debug_atomic = 0;
+  }
+}
+
 void init_pthread_structs(void) {
   miniomp_parallel_count = 0;
   miniomp_thread_count = 1;

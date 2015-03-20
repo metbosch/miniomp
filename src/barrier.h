@@ -1,6 +1,7 @@
 #ifndef __MINIOMP_BARRIER__
 #define __MINIOMP_BARRIER__
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdlib.h>
 
 #define MYBARRIER 1
@@ -20,6 +21,6 @@ typedef pthread_barrier_t miniomp_barrier_t;
 // Barrier related functions
 void miniomp_barrier_init(miniomp_barrier_t *restrict barrier, unsigned count);
 void miniomp_barrier_destroy(miniomp_barrier_t *barrier);
-unsigned char miniomp_barrier_wait(miniomp_barrier_t *barrier);
+bool miniomp_barrier_wait(miniomp_barrier_t *barrier);
 
 #endif

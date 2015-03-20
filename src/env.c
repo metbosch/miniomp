@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include "libminiomp.h"
+#include <string.h>
 
 // Global variable storing the ICV (internal control variables) supported in our implementation
 miniomp_icv_t miniomp_icv;
@@ -14,4 +15,9 @@ void parse_env(void) {
       miniomp_icv.nthreads_var = (env_threads > 0 ? env_threads : miniomp_icv.nthreads_var);
     }
     //printf("Setting nthreads_var ICV to %d\n", miniomp_icv.nthreads_var);
+    char * dbg_env = getenv("OMP_DEBUG");
+    miniomp_icv.debug_enabled = (dbg_env != NULL);
+    miniomp_icv.debug_enabled &= (strcmp(dbg_env, "FALSE") != 0);
+    miniomp_icv.debug_enabled &= (strcmp(dbg_env, "false") != 0);
+    miniomp_icv.debug_enabled &= (strcmp(dbg_env, "False") != 0);
 }

@@ -1,42 +1,5 @@
 #include "libminiomp.h"
 
-miniomp_taskqueue_t * miniomp_taskqueue;
-
-// Initializes the task queue
-miniomp_taskqueue_t *init_task_queue(int max_elements) {
-    return NULL;
-}
-
-// Checks if the task descriptor is valid
-bool is_valid(miniomp_wd_t *task_descriptor) {
-    return false;
-}
-
-// Checks if the task queue is empty
-bool is_empty(miniomp_taskqueue_t *task_queue) {
-    return true;
-}
-
-// Checks if the task queue is full
-bool is_full(miniomp_taskqueue_t *task_queue) {
-    return false;
-}
-
-// Enqueues the task descriptor at the tail of the task queue
-bool enqueue(miniomp_taskqueue_t *task_queue, miniomp_wd_t *task_descriptor) {
-    return true;
-}
-
-// Dequeue the task descriptor at the head of the task queue
-bool dequeue(miniomp_taskqueue_t *task_queue) { 
-    return true;
-}
-
-// Returns the task descriptor at the head of the task queue
-miniomp_wd_t *first(miniomp_taskqueue_t *task_queue) {
-    return NULL;
-}
-
 /* Called when encountering an explicit task directive.  If IF_CLAUSE is
    false, then we must not delay in executing the task. */
 void

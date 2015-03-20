@@ -1,5 +1,6 @@
 #include "libminiomp.h"
 #include "specifickey.h"
+#include "parallel.h"
 
 void omp_set_num_threads (int n) {
   miniomp_icv.nthreads_var = (n > 0 ? n : 1);
@@ -7,7 +8,7 @@ void omp_set_num_threads (int n) {
 
 int omp_get_num_threads (void) {
   miniomp_specifickey_t * key = miniomp_get_thread_specifickey();
-  return(key->parallel_region == NULL ? 1 : key->parallel_region->num_threads);
+  return(key->parallel_region == NULL ? 1 : miniomp_parallel_get_num_threads(key->parallel_region));
 }
 
 int omp_get_thread_num (void) {

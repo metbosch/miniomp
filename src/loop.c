@@ -26,12 +26,12 @@ void destroy_miniomp_loop_t(miniomp_loop_t * loop) {
 }
 
 bool miniomp_loop_dynamic_next(long *istart, long *iend) {
-  miniomp_parallel_t *region = miniomp_get_thread_specifickey()->parallel_region; 
-  long increment = (region->loop->incr * region->loop->chunk_size);
-  *istart = __sync_fetch_and_add(&region->loop->next, increment);
+  miniomp_loop_t *loop = *(miniomp_parallel_get_loop(miniomp_get_thread_specifickey()->parallel_region)); 
+  long increment = (loop->incr * loop->chunk_size);
+  *istart = __sync_fetch_and_add(&loop->next, increment);
   *iend = *istart + increment;
-  *iend = MIN(*iend, (region->loop->end));
-  return(*istart < (region->loop->end));
+  *iend = MIN(*iend, (loop->end));
+  return(*istart < (loop->end));
 }
 
 /* The *_next routines are called when the thread completes processing of 
@@ -68,10 +68,11 @@ GOMP_loop_dynamic_start (long start, long end, long incr, long chunk_size,
 {
   miniomp_parallel_t *region = miniomp_get_thread_specifickey()->parallel_region;
   if (miniomp_single_first()) {
-    region->loop = new_miniomp_loop_t(start, end, incr, chunk_size, ws_DYNAMIC);
+    
+    *(miniomp_parallel_get_loop(region)) = new_miniomp_loop_t(start, end, incr, chunk_size, ws_DYNAMIC);
     __sync_synchronize();
   }
-  miniomp_barrier_wait(&region->barrier);
+  miniomp_parallel_barrier_wait(region);
   return miniomp_loop_dynamic_next(istart, iend);
 }
 
@@ -82,23 +83,22 @@ GOMP_loop_dynamic_start (long start, long end, long incr, long chunk_size,
 void
 GOMP_loop_end (void) {
   miniomp_parallel_t *region = miniomp_get_thread_specifickey()->parallel_region; 
-  if (miniomp_barrier_wait(&region->barrier)) {
-    destroy_miniomp_loop_t(region->loop);
-    region->loop = NULL;
+  miniomp_loop_t **loop = miniomp_parallel_get_loop(region);
+  if (miniomp_parallel_barrier_wait(region)) {
+    destroy_miniomp_loop_t(*loop);
+    *loop = NULL;
     __sync_synchronize();
-  } else {
-    while (region->loop != NULL) {
-      __sync_synchronize();
-    }
   }
+  miniomp_parallel_barrier_wait(region);
 }
 
 void
 GOMP_loop_end_nowait (void) {
   if (miniomp_single_last()) {
     miniomp_parallel_t *region = miniomp_get_thread_specifickey()->parallel_region;
-    destroy_miniomp_loop_t(region->loop);
-    region->loop = NULL;
+    miniomp_loop_t **loop = miniomp_parallel_get_loop(region);
+    destroy_miniomp_loop_t(*loop);
+    *loop = NULL;
     __sync_synchronize();
   }
 }

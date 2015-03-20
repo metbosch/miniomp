@@ -4,6 +4,18 @@
 #include "threadteam.h"
 #include "atomicqueue.h"
 #include "specifickey.h"
+#include "parallel.h"
+
+// Structures definition
+/*struct miniomp_thread_struct {
+  pthread_t pthread;
+};
+
+struct miniomp_thread_team_struct {
+  unsigned num_threads;
+  miniomp_thread_t *threads;
+  miniomp_atomic_queue_t queue;
+};*/
 
 void miniomp_thread_team_init(miniomp_thread_team_t *team, unsigned num_threads) {
   team->num_threads = num_threads;
@@ -22,7 +34,7 @@ void *worker(void *args) {
   miniomp_set_thread_specifickey((miniomp_specifickey_t *)(args));
   //printf("Starting thread num %d\n", omp_get_thread_num());
   //   2) invoke the per-threads instance of function encapsulating the parallel region
-  miniomp_wd_run(&((miniomp_specifickey_t *)args)->parallel_region->wd);
+  miniomp_wd_run(miniomp_parallel_get_wd(((miniomp_specifickey_t *)args)->parallel_region));
   //   3) exit the function
   pthread_exit(NULL);
 }
@@ -42,6 +54,9 @@ void miniomp_thread_team_join(miniomp_thread_team_t *team, int self) {
   }
 }
 
+unsigned miniomp_thread_team_get_num_threads(miniomp_thread_team_t *team) {
+  return team->num_threads;
+}
 
 void miniomp_push_task(miniomp_thread_team_t *team, miniomp_wd_t *task) {
 }
