@@ -16,7 +16,8 @@ void parse_env(void) {
     }
     //printf("Setting nthreads_var ICV to %d\n", miniomp_icv.nthreads_var);
     char * dbg_env = getenv("OMP_DEBUG");
-    miniomp_icv.debug_enabled = (dbg_env != NULL);
+    miniomp_icv.debug_enabled = true;
+    dbg_env = (dbg_env != NULL) ? dbg_env : "FALSE";
     miniomp_icv.debug_enabled &= (strcmp(dbg_env, "FALSE") != 0);
     miniomp_icv.debug_enabled &= (strcmp(dbg_env, "false") != 0);
     miniomp_icv.debug_enabled &= (strcmp(dbg_env, "False") != 0);

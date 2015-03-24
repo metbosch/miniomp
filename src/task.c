@@ -32,6 +32,6 @@ void
 GOMP_taskwait (void)
 {
 //    printf("TBI: Entered in taskwait, there should be no pending tasks, so I proceed\n");
-    miniomp_parallel_t *region = miniomp_get_thread_specifickey()->parallel_region;
-    miniomp_parallel_barrier_wait(region);
+    miniomp_thread_team_t *team = miniomp_parallel_get_team(miniomp_get_thread_specifickey()->parallel_region);
+    miniomp_thread_team_taskwait(team);
 }

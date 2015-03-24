@@ -10,9 +10,10 @@
 
 //typedef struct miniomp_thread_team_struct miniomp_thread_team_t;
 
-typedef struct {
+/*typedef struct {
   pthread_t pthread;
-} miniomp_thread_t;
+  bool running;
+} miniomp_thread_t;*/
 
 /*typedef struct {
   unsigned num_threads;
@@ -37,5 +38,7 @@ unsigned miniomp_thread_team_get_num_threads(miniomp_thread_team_t *team);
 void miniomp_thread_team_push_task(miniomp_thread_team_t *team, miniomp_wd_t *task);
 
 miniomp_wd_t *miniomp_thread_team_pop_task(miniomp_thread_team_t *team);
+
+bool miniomp_thread_team_taskwait(miniomp_thread_team_t *team);
 
 #endif

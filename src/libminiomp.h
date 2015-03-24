@@ -27,6 +27,7 @@ extern miniomp_icv_t miniomp_icv;
 // Forward of types declaration
 typedef struct miniomp_parallel_struct miniomp_parallel_t;
 typedef struct miniomp_thread_team_struct miniomp_thread_team_t;
+typedef struct miniomp_thread_struct miniomp_thread_t;
 
 //extern miniomp_parallel_t *miniomp_parallel;
 extern pthread_mutex_t *miniomp_parallel_mutex;
@@ -35,7 +36,6 @@ extern unsigned miniomp_thread_count;
 
 // Other global functions
 void CHECK_ERR(int result, int expected); 
-
 void DEBUG(char *str);
 
 #endif

@@ -20,7 +20,9 @@ void miniomp_wd_init(miniomp_wd_t *wd, void (*fn) (void *), void *fn_data) {
 }
 
 void miniomp_wd_run(miniomp_wd_t * wd) {
+    DEBUG("Starting WD execution");
     wd->fn(wd->fn_data);
+    DEBUG("WD executed");
 }
 
 #endif
