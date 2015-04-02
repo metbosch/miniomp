@@ -2,6 +2,7 @@
 #include "libminiomp.h"
 #include "intrinsic.h"
 #include "specifickey.h"
+#include "parallel.h"
 #include <signal.h>
 #include <execinfo.h>
 
@@ -49,35 +50,18 @@ void handler(int signalCode) {
   exit(0);
 }
 
-void init_pthread_structs(void) {
-  miniomp_parallel_count = 0;
-  miniomp_thread_count = 1;
-  // Init mutex for modify the parallel regions list
-  miniomp_parallel_mutex = (pthread_mutex_t *)(malloc(sizeof(pthread_mutex_t)));
-  CHECK_ERR( pthread_mutex_init(miniomp_parallel_mutex, NULL), 0 );
-}
-
-void fini_pthread_structs(void) {
-  // Parallel regions list mutex
-  CHECK_ERR( pthread_mutex_destroy(miniomp_parallel_mutex), 0 );
-  free((void *)(miniomp_parallel_mutex));
-}
-
 void
 init_miniomp(void) {
-  printf ("mini-omp is being initialized\n");
+  DEBUG("Mini-omp is being initialized\n");
   parse_env();
   
-  init_pthread_structs();
+  miniomp_parallel_create();
   miniomp_specifickey_create();
   miniomp_set_thread_specifickey(new_miniomp_specifickey_t(0, NULL));
-
 //  signal(SIGSEGV, handler);
 }
 
 void
 fini_miniomp(void) {
-  // free structures allocated during library initialization
-  fini_pthread_structs();
-  printf ("mini-omp is finalized\n");
+  DEBUG("Mini-omp is finalized\n");
 }

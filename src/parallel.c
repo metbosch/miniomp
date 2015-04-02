@@ -7,23 +7,19 @@
 #include "threadteam.h"
 #include "loop.h"
 
+// Struct definition
 struct miniomp_parallel_struct {
-    int id;
-    // complete the definition of parallel descriptor
+    unsigned id;
     miniomp_wd_t wd;
     miniomp_thread_team_t* team; // Team of threads for this region
-    miniomp_barrier_t barrier;  // Barrier for this parallel region
-    pthread_mutex_t mutex;      // Mutex for critical regions
-    unsigned single_count;      // Counter for single regions
-    miniomp_loop_t *loop;       // Pointer to parallel loop structure
-//    pthread_mutex_t loop_mutex;       // Mutex for loop creation and destruction
+    miniomp_barrier_t barrier;   // Barrier for this parallel region
+    pthread_mutex_t mutex;       // Mutex for critical regions
+    unsigned single_count;       // Counter for single regions
+    miniomp_loop_t *loop;        // Pointer to parallel loop structure
 };
 
 // Global variable for parallel descriptors
-//miniomp_parallel_t *miniomp_parallel;
-pthread_mutex_t *miniomp_parallel_mutex;
 unsigned miniomp_parallel_count;
-//unsigned miniomp_thread_count;
 
 miniomp_parallel_t *new_miniomp_parallel_t(void (*fn) (void *), void *data, unsigned num_threads, unsigned int flags) {
   miniomp_parallel_t *ret = (miniomp_parallel_t *)(malloc(sizeof(miniomp_parallel_t)));
@@ -34,11 +30,8 @@ miniomp_parallel_t *new_miniomp_parallel_t(void (*fn) (void *), void *data, unsi
   miniomp_wd_init(&ret->wd, fn, data);
   miniomp_barrier_init(&ret->barrier, num_threads);
   CHECK_ERR( pthread_mutex_init(&ret->mutex, NULL), 0 );
+  ret->id = __sync_fetch_and_add(&miniomp_parallel_count, 1);
 
-  CHECK_ERR( pthread_mutex_lock(miniomp_parallel_mutex), 0 );
-  ret->id = ++miniomp_parallel_count;
-  CHECK_ERR( pthread_mutex_unlock(miniomp_parallel_mutex), 0 );
- 
   return ret;
 }
 
@@ -86,6 +79,10 @@ miniomp_wd_t *miniomp_parallel_get_wd(miniomp_parallel_t *region) {
 
 miniomp_thread_team_t *miniomp_parallel_get_team(miniomp_parallel_t *region) {
   return region->team;
+}
+
+void miniomp_parallel_create() {
+  miniomp_parallel_count = 0;
 }
 
 void

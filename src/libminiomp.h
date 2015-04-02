@@ -8,13 +8,8 @@
 #include <string.h>
 #include <stdint.h>
 #include <pthread.h>
-//#include "parallel.h"
 
 #define MAX_THREADS 32
-
-// To implement memory barrier (flush)
-//void __atomic_thread_fence(int);
-#define mb() __atomic_thread_fence(3)
 
 // Type declaration for Internal Control Variables (ICV) structure
 typedef struct {
@@ -28,11 +23,6 @@ extern miniomp_icv_t miniomp_icv;
 typedef struct miniomp_parallel_struct miniomp_parallel_t;
 typedef struct miniomp_thread_team_struct miniomp_thread_team_t;
 typedef struct miniomp_thread_struct miniomp_thread_t;
-
-//extern miniomp_parallel_t *miniomp_parallel;
-extern pthread_mutex_t *miniomp_parallel_mutex;
-extern unsigned miniomp_parallel_count;
-extern unsigned miniomp_thread_count;
 
 // Other global functions
 void CHECK_ERR(int result, int expected); 
