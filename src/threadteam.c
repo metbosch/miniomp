@@ -51,22 +51,20 @@ void destroy_miniomp_thread_team_t(miniomp_thread_team_t *team) {
 }
 
 void *worker(void *args) {
-  miniomp_specifickey_t *key = (miniomp_specifickey_t *)(args);
-  miniomp_thread_team_t *team = miniomp_parallel_get_team(key->parallel_region);
-  miniomp_thread_t *thread = &team->threads[key->id];
-  //   0) Mark thread as running
+  miniomp_set_thread_specifickey((miniomp_specifickey_t *)(args));
+  miniomp_parallel_t *region = miniomp_get_parallel_region();
+  miniomp_thread_team_t *team = miniomp_parallel_get_team(region);
+  miniomp_thread_t *thread = &team->threads[miniomp_get_thread_id()];
+  // Mark thread as running
   thread->status.running = true;
-  //   1) save thread-specific data
-  miniomp_set_thread_specifickey(key);
-  //   2) invoke the per-threads instance of function encapsulating the parallel region
-  miniomp_wd_run(miniomp_parallel_get_wd(key->parallel_region));
-  //   3) Wait work until thread is not running
+  // Invoke the per-threads instance of function encapsulating the parallel region
+  miniomp_wd_run(miniomp_parallel_get_wd(region));
+  // Wait work until thread is not running
   while (thread->status.running && !thread->status.must_stop) {
-    //__sync_synchronize();
     miniomp_thread_team_taskwait(team);
     __sync_synchronize();
   }
-  //   4) exit the function
+  // Exit
   pthread_exit(NULL);
 }
 

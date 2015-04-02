@@ -24,7 +24,7 @@ GOMP_task (void (*fn) (void *), void *data, void (*cpyfn) (void *, void *),
         new_data = malloc(arg_size);
     }
     miniomp_wd_t *new_wd = new_miniomp_wd_t(fn, new_data);
-    miniomp_thread_team_t *team = miniomp_parallel_get_team(miniomp_get_thread_specifickey()->parallel_region);
+    miniomp_thread_team_t *team = miniomp_parallel_get_team(miniomp_get_parallel_region());
     miniomp_thread_team_push_task(team, new_wd);
 }
 
@@ -32,6 +32,6 @@ void
 GOMP_taskwait (void)
 {
 //    printf("TBI: Entered in taskwait, there should be no pending tasks, so I proceed\n");
-    miniomp_thread_team_t *team = miniomp_parallel_get_team(miniomp_get_thread_specifickey()->parallel_region);
+    miniomp_thread_team_t *team = miniomp_parallel_get_team(miniomp_get_parallel_region());
     miniomp_thread_team_taskwait(team);
 }

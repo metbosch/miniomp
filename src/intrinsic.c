@@ -7,13 +7,10 @@ void omp_set_num_threads (int n) {
 }
 
 int omp_get_num_threads (void) {
-  miniomp_specifickey_t * key = miniomp_get_thread_specifickey();
-  return(key->parallel_region == NULL ? 1 : miniomp_parallel_get_num_threads(key->parallel_region));
+  miniomp_parallel_t * p = miniomp_get_parallel_region();
+  return(p == NULL ? 1 : miniomp_parallel_get_num_threads(p));
 }
 
 int omp_get_thread_num (void) {
-  //if (miniomp_specifickey == NULL) return 1;
-  return (miniomp_get_thread_specifickey()->id);
-  //printf("TBI: omp_get_thread_num still doesn't know who I am ... let's say 0\n");
-  //return(0);
+  return miniomp_get_thread_id();
 }

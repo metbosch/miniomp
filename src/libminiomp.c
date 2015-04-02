@@ -23,7 +23,7 @@ int miniomp_debug_atomic = 0;
 void DEBUG(char *str) {
   if (miniomp_icv.debug_enabled) {
     while (!(__sync_bool_compare_and_swap(&miniomp_debug_atomic, 0, 1)));
-    fprintf(stderr, "%d:\t", miniomp_get_thread_specifickey()->id);
+    fprintf(stderr, "%d:\t", miniomp_get_thread_id());
     fprintf(stderr, str);
     fprintf(stderr, "\n");
     miniomp_debug_atomic = 0;

@@ -27,7 +27,7 @@ void destroy_miniomp_loop_t(miniomp_loop_t * loop) {
 }
 
 bool miniomp_loop_dynamic_next(long *istart, long *iend) {
-  miniomp_loop_t *loop = *(miniomp_parallel_get_loop(miniomp_get_thread_specifickey()->parallel_region)); 
+  miniomp_loop_t *loop = *(miniomp_parallel_get_loop(miniomp_get_parallel_region())); 
   long increment = (loop->incr * loop->chunk_size);
   *istart = __sync_fetch_and_add(&loop->next, increment);
   *iend = *istart + increment;
@@ -67,7 +67,7 @@ bool
 GOMP_loop_dynamic_start (long start, long end, long incr, long chunk_size,
                          long *istart, long *iend)
 {
-  miniomp_parallel_t *region = miniomp_get_thread_specifickey()->parallel_region;
+  miniomp_parallel_t *region = miniomp_get_parallel_region();
   if (miniomp_single_first()) {
     
     *(miniomp_parallel_get_loop(region)) = new_miniomp_loop_t(start, end, incr, chunk_size, ws_DYNAMIC);
@@ -83,7 +83,7 @@ GOMP_loop_dynamic_start (long start, long end, long incr, long chunk_size,
 
 void
 GOMP_loop_end (void) {
-  miniomp_parallel_t *region = miniomp_get_thread_specifickey()->parallel_region; 
+  miniomp_parallel_t *region = miniomp_get_parallel_region(); 
   miniomp_loop_t **loop = miniomp_parallel_get_loop(region);
   if (miniomp_parallel_barrier_wait(region)) {
     destroy_miniomp_loop_t(*loop);
@@ -96,7 +96,7 @@ GOMP_loop_end (void) {
 void
 GOMP_loop_end_nowait (void) {
   if (miniomp_single_last()) {
-    miniomp_parallel_t *region = miniomp_get_thread_specifickey()->parallel_region;
+    miniomp_parallel_t *region = miniomp_get_parallel_region();
     miniomp_loop_t **loop = miniomp_parallel_get_loop(region);
     destroy_miniomp_loop_t(*loop);
     *loop = NULL;

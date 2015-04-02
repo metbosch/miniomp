@@ -46,7 +46,7 @@ void destroy_custom_barrier(miniomp_barrier_t *barrier) {
 #if MYBARRIER
 bool wait_custom_barrier(miniomp_barrier_t *barrier) {
   DEBUG("Entering in a barrier");
-  miniomp_thread_team_t *team = miniomp_parallel_get_team(miniomp_get_thread_specifickey()->parallel_region);
+  miniomp_thread_team_t *team = miniomp_parallel_get_team(miniomp_get_parallel_region());
   miniomp_thread_team_taskwait(team);
  
   CHECK_ERR( pthread_mutex_lock(&barrier->mutex), 0 );
