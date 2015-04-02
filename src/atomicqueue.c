@@ -50,16 +50,17 @@ void *miniomp_atomic_queue_pop(miniomp_atomic_queue_t *queue) {
     return NULL;
   }
   CHECK_ERR( pthread_mutex_lock(&queue->mutex), 0 );
-  void * element = queue->front->data;
-  queue->front = queue->front->next;
-  if (queue->front == NULL) {
-    queue->last = NULL;
+  void * element = NULL;
+  if (!miniomp_atomic_queue_empty(queue)) {
+    element = queue->front->data;
+    queue->front = queue->front->next;
+    queue->last = queue->front != NULL ? queue->last : NULL;
   }
   CHECK_ERR( pthread_mutex_unlock(&queue->mutex), 0 );
   return element;
 }
 
-bool miniomp_atomic_queue_empty(miniomp_atomic_queue_t *queue) {
+inline bool miniomp_atomic_queue_empty(miniomp_atomic_queue_t *queue) {
   return queue->front == NULL;
 }
 

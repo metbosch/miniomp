@@ -11,6 +11,7 @@ miniomp_wd_t *new_miniomp_wd_t(void (*fn) (void *), void *fn_data) {
 }
 
 void destroy_miniomp_wd_t(miniomp_wd_t *wd) {
+    free(wd->fn_data);
     free(wd);
 }
 
