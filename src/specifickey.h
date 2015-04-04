@@ -2,6 +2,9 @@
 #define __MINIOMP_SPECIFICKEY_H__
 #include "libminiomp.h"
 
+/**
+  * Types definition
+  */
 typedef struct miniomp_specifickey_struct miniomp_specifickey_t;
 
 /**
