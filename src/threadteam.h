@@ -1,7 +1,6 @@
 #ifndef __MINIOMP_THREAD_TEAM_H__
 #define __MINIOMP_THREAD_TEAM_H__
 #include <pthread.h>
-#include "atomicqueue.h"
 #include "libminiomp.h"
 #include "workdescriptor.h"
 #include "parallel.h"

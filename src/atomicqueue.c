@@ -10,11 +10,11 @@ struct miniomp_queue_elem_struct {
    miniomp_queue_elem_t *next;
 };
 
-struct miniomp_atomic_queue_struct {
+/*struct miniomp_atomic_queue_struct {
    pthread_mutex_t mutex;
    miniomp_queue_elem_t *front;
    miniomp_queue_elem_t *last;
-};
+};*/
 
 void miniomp_atomic_queue_init(miniomp_atomic_queue_t *queue) {
    queue->front = NULL;

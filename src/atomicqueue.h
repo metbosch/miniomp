@@ -1,13 +1,18 @@
 #ifndef __MINIOMP_ATOMIC_QUEUE_H__
 #define __MINIOMP_ATOMIC_QUEUE_H__
+#include <stdbool.h>
 #include <pthread.h>
-#include "libminiomp.h"
 
 /**
   * Types definition
   */
 typedef struct miniomp_queue_elem_struct miniomp_queue_elem_t;
-typedef struct miniomp_atomic_queue_struct miniomp_atomic_queue_t;
+//typedef struct miniomp_atomic_queue_struct miniomp_atomic_queue_t;
+typedef struct {
+   pthread_mutex_t mutex;
+   miniomp_queue_elem_t *front;
+   miniomp_queue_elem_t *last;
+} miniomp_atomic_queue_t;
 
 /**
   * Creates a new atomic queue object

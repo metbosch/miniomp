@@ -61,7 +61,7 @@ void init_miniomp(void) {
   miniomp_parallel_create();
   miniomp_specifickey_create();
   miniomp_set_thread_specifickey(new_miniomp_specifickey_t(0, NULL));
-//  signal(SIGSEGV, handler);
+  signal(SIGSEGV, handler);
 }
 
 // Library destructor
