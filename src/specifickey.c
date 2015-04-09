@@ -2,19 +2,21 @@
 #define __MINIOMP_SPECIFICKEY_C__
 #include <pthread.h>
 #include "specifickey.h"
+#include "threadteam.h"
+#include "thread.h"
 
 // Struct definition
 struct miniomp_specifickey_struct {
-   unsigned id;
+   miniomp_thread_t *thread;
    miniomp_parallel_t *parallel_region;
    miniomp_specifickey_t *previous;
 };
 
 pthread_key_t miniomp_specifickey;
 
-miniomp_specifickey_t *new_miniomp_specifickey_t(unsigned id, miniomp_parallel_t *region) {
+miniomp_specifickey_t *new_miniomp_specifickey_t(miniomp_thread_t *thread, miniomp_parallel_t *region) {
    miniomp_specifickey_t *ret = (miniomp_specifickey_t *) malloc (sizeof (miniomp_specifickey_t));
-   ret->id = id;
+   ret->thread = thread;
    ret->parallel_region = region;
    ret->previous = NULL;
    return ret;
@@ -33,7 +35,11 @@ inline miniomp_specifickey_t *miniomp_get_thread_specifickey() {
 }
 
 inline unsigned miniomp_get_thread_id() {
-   return ((miniomp_specifickey_t *)(pthread_getspecific(miniomp_specifickey)))->id;
+   return miniomp_thread_get_id(((miniomp_specifickey_t *)(pthread_getspecific(miniomp_specifickey)))->thread);
+}
+
+inline miniomp_thread_t *miniomp_get_self_thread() {
+   return ((miniomp_specifickey_t *)(pthread_getspecific(miniomp_specifickey)))->thread;
 }
 
 inline miniomp_parallel_t *miniomp_specifickey_get_parallel(miniomp_specifickey_t *key) {

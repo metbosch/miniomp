@@ -8,6 +8,7 @@
 #include "specifickey.h"
 #include "threadteam.h"
 #include "loop.h"
+#include "thread.h"
 
 // Struct definition
 struct miniomp_parallel_struct {
@@ -29,7 +30,7 @@ miniomp_parallel_t *new_miniomp_parallel_t(void (*fn) (void *), void *data, unsi
    ret->single_count = 0;
    ret->loop = NULL;
    ret->team = new_miniomp_thread_team_t(num_threads);
-   miniomp_wd_init(&ret->wd, fn, data);
+   miniomp_wd_init(&ret->wd, fn, data, NULL, PARALLEL);
    miniomp_barrier_init(&ret->barrier, num_threads);
    CHECK_ERR( pthread_mutex_init(&ret->mutex, NULL), 0 );
    ret->id = __sync_fetch_and_add(&miniomp_parallel_count, 1);
@@ -42,10 +43,6 @@ void destroy_miniomp_parallel_t(miniomp_parallel_t *region) {
    miniomp_barrier_destroy(&region->barrier);
    CHECK_ERR( pthread_mutex_destroy(&region->mutex), 0 );
    free(region);
-}
-
-void miniomp_parallel_create_threads(miniomp_parallel_t *region) {
-   miniomp_thread_team_start(region->team, region);
 }
 
 void miniomp_parallel_join_threads(miniomp_parallel_t *region) {
@@ -93,9 +90,8 @@ GOMP_parallel (void (*fn) (void *), void *data, unsigned num_threads, unsigned i
    if(!num_threads) num_threads = miniomp_icv.nthreads_var;
    DEBUG("Starting new parallel region");
    miniomp_parallel_t *local_parallel = new_miniomp_parallel_t(fn, data, num_threads, flags);
-   miniomp_parallel_create_threads(local_parallel);
-
-   miniomp_specifickey_t *next = new_miniomp_specifickey_t(0, local_parallel);
+   miniomp_thread_t *self = miniomp_thread_team_start(local_parallel->team, local_parallel);
+   miniomp_specifickey_t *next = new_miniomp_specifickey_t(self, local_parallel);
    miniomp_set_thread_specifickey(next);
 
    miniomp_wd_run(&local_parallel->wd);
@@ -113,9 +109,8 @@ GOMP_parallel_start (void (*fn) (void *), void *data, unsigned num_threads)
    if(!num_threads) num_threads = miniomp_icv.nthreads_var;
    DEBUG("Starting new parallel region");
    miniomp_parallel_t *local_parallel = new_miniomp_parallel_t(fn, data, num_threads, 0);
-   miniomp_parallel_create_threads(local_parallel);
-
-   miniomp_specifickey_t *next = new_miniomp_specifickey_t(0, local_parallel);
+   miniomp_thread_t *self = miniomp_thread_team_start(local_parallel->team, local_parallel);
+   miniomp_specifickey_t *next = new_miniomp_specifickey_t(self, local_parallel);
    miniomp_set_thread_specifickey(next);
 }
 

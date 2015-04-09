@@ -1,6 +1,5 @@
 #ifndef __MINIOMP_THREAD_TEAM_H__
 #define __MINIOMP_THREAD_TEAM_H__
-#include <pthread.h>
 #include "libminiomp.h"
 #include "workdescriptor.h"
 #include "parallel.h"
@@ -8,7 +7,6 @@
 /**
   * Types definition
   */
-//typedef struct miniomp_thread_struct miniomp_thread_t;
 //typedef struct miniomp_thread_team_struct miniomp_thread_team_t;
 
 /**
@@ -33,8 +31,9 @@ void destroy_miniomp_thread_team_t(miniomp_thread_team_t *team);
 
 /**
   * Starts the threads in the team
+  * Returns pointer to caller info thread
   */
-void miniomp_thread_team_start(miniomp_thread_team_t *team, miniomp_parallel_t *region);
+miniomp_thread_t * miniomp_thread_team_start(miniomp_thread_team_t *team, miniomp_parallel_t *region);
 
 /**
   * Stops and joins all threads in the teams (Doesn't stops the thread identified by self)
@@ -52,8 +51,9 @@ unsigned miniomp_thread_team_get_num_threads(miniomp_thread_team_t *team);
 void miniomp_thread_team_push_task(miniomp_thread_team_t *team, miniomp_wd_t *task);
 
 /**
-  * Waits untill all the team tasks are executed
+  * Returns a task to execute by one thread team
+  * Retuns NULL if no one is available
   */
-bool miniomp_thread_team_taskwait(miniomp_thread_team_t *team);
+miniomp_wd_t *miniomp_thread_team_pop_task(miniomp_thread_team_t *team);
 
 #endif

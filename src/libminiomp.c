@@ -1,12 +1,13 @@
 #ifndef __MINIOMP_LIB_C__
 #define __MINIOMP_LIB_C__
 #include <unistd.h>
+#include <signal.h>
+#include <execinfo.h>
 #include "libminiomp.h"
 #include "intrinsic.h"
 #include "specifickey.h"
 #include "parallel.h"
-#include <signal.h>
-#include <execinfo.h>
+#include "thread.h"
 
 // Library constructor and desctructor
 void init_miniomp(void) __attribute__((constructor));
@@ -60,8 +61,8 @@ void init_miniomp(void) {
 
   miniomp_parallel_create();
   miniomp_specifickey_create();
-  miniomp_set_thread_specifickey(new_miniomp_specifickey_t(0, NULL));
-  signal(SIGSEGV, handler);
+  miniomp_set_thread_specifickey(new_miniomp_specifickey_t(new_miniomp_thread_t(0, NULL), NULL));
+//  signal(SIGSEGV, handler);
 }
 
 // Library destructor
