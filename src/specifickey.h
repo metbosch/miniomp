@@ -2,12 +2,15 @@
 #define __MINIOMP_SPECIFICKEY_H__
 #include "libminiomp.h"
 
+/**
+  * Types definition
+  */
 typedef struct miniomp_specifickey_struct miniomp_specifickey_t;
 
 /**
   * Creates a new object with the specified information
   */
-miniomp_specifickey_t *new_miniomp_specifickey_t(unsigned id, miniomp_parallel_t *region);
+miniomp_specifickey_t *new_miniomp_specifickey_t(miniomp_thread_t *thread, miniomp_parallel_t *region);
 
 /**
   * Destroys an existing object
@@ -23,6 +26,11 @@ miniomp_specifickey_t *miniomp_get_thread_specifickey();
   * Getter of caller thread identifier
   */
 unsigned miniomp_get_thread_id();
+
+/**
+  * Getter of caller thread info
+  */
+miniomp_thread_t *miniomp_get_self_thread();
 
 /**
   * Getter of parallel region for caller thread
