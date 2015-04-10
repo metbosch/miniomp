@@ -76,7 +76,7 @@ void miniomp_thread_join(miniomp_thread_t *thread);
 void miniomp_thread_taskwait(miniomp_thread_t *thread);
 
 /**
-  * Marks the thread as idle and waits until must stop
+  * Marks the thread as idle and executes all team work
   */
 void miniomp_thread_idle(miniomp_thread_t *thread);
 

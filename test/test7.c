@@ -7,12 +7,23 @@
 #include <omp.h>	/* OpenMP */
 
 long result=0;
+long result2=0;
 
 void foo() {
    for (long i = 0; i < 1000; i++) {
        #pragma omp task shared(result)
-       #pragma omp critical
-       result++;
+       {
+          #pragma omp task shared(result)
+{
+          #pragma omp critical
+          result++;
+}          
+          #pragma omp task shared(result2)
+{
+          #pragma omp atomic
+          result2++;
+}
+       }
    }
    for (long i = 0; i < 500; i++) {
        #pragma omp atomic
@@ -42,5 +53,5 @@ int main(int argc, char *argv[]) {
       t5 += result*8;
    }
    printf("Before barrier: %ld,\tBefore taskwait: %ld,\tAfter taskwait: %ld,\tAfter barrier: %ld\n", t1, t2, t3, t4);
-   printf("After parallel: %ld,\tAt the end: %ld\n", t5, result);
+   printf("After parallel: %ld,\tAt the end: %ld\tResult2: %ld\n", t5, result, result2);
 }

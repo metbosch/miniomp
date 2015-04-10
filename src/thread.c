@@ -93,11 +93,10 @@ void miniomp_thread_taskwait(miniomp_thread_t *thread) {
 }
 
 void miniomp_thread_idle(miniomp_thread_t *thread) {
-   while(miniomp_thread_is_running(thread)) {
-      miniomp_wd_t *work = miniomp_thread_team_pop_task(thread->team);
-      if (work != NULL) {
-         miniomp_wd_run(work);
-      }
+   miniomp_wd_t *work = miniomp_thread_team_pop_task(thread->team);
+   while(work != NULL) {
+      miniomp_wd_run(work);
+      work = miniomp_thread_team_pop_task(thread->team);
    }
 }
 

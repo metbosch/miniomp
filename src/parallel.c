@@ -46,6 +46,7 @@ void destroy_miniomp_parallel_t(miniomp_parallel_t *region) {
 }
 
 void miniomp_parallel_join_threads(miniomp_parallel_t *region) {
+   miniomp_thread_idle(miniomp_get_self_thread());
    miniomp_thread_team_join(region->team, 0);
 }
 unsigned miniomp_parallel_get_num_threads(miniomp_parallel_t *region) {

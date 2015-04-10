@@ -24,6 +24,7 @@ void miniomp_wd_init(miniomp_wd_t *wd, void (*fn) (void *), void *fn_data, minio
    wd->components = 0;
    wd->executed_components = 0;
    wd->type = type;
+   wd->status = CREATED;
    if (parent != NULL) {
       miniomp_wd_new_component(parent);
    }
@@ -32,7 +33,7 @@ void miniomp_wd_init(miniomp_wd_t *wd, void (*fn) (void *), void *fn_data, minio
 void miniomp_wd_finish(miniomp_wd_t *wd) {
    if (wd == NULL) return;
    int executed = __sync_add_and_fetch(&wd->executed_components, 1);
-   if (executed == wd->components && wd->type == TASK) {
+   if (executed == wd->components && wd->type == TASK && wd->status == EXECUTED) {
       destroy_miniomp_wd_t(wd);
    }
    __sync_synchronize();
@@ -50,14 +51,25 @@ void miniomp_wd_run(miniomp_wd_t *wd) {
    miniomp_thread_t *self = miniomp_get_self_thread();
    miniomp_wd_t *old = miniomp_thread_get_wd(self);
    DEBUG("Starting WD execution");
+   if (old != NULL) {
+      old->status = BLOCKED;
+   }
+   wd->status = RUNNING;
    miniomp_thread_set_wd(self, wd);
    wd->fn(wd->fn_data);
    miniomp_thread_set_wd(self, old);
    miniomp_wd_finish(wd->parent);
+   if (old != NULL) {
+      old->status = RUNNING;
+   }
    DEBUG("WD executed");
 
    if (wd->components == 0  && wd->type == TASK) {
       destroy_miniomp_wd_t(wd);
+   } else if (wd->components == wd->executed_components && wd->type == TASK) {
+      destroy_miniomp_wd_t(wd);
+   } else {
+      wd->status = EXECUTED;
    }
 }
 

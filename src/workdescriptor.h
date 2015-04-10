@@ -6,15 +6,17 @@
   * Structures and types definition
   */
 typedef enum{PARALLEL, TASK} miniomp_wd_kind_t;
+typedef enum{CREATED, RUNNING, BLOCKED, EXECUTED} miniomp_wd_states_t;
 
 typedef struct miniomp_wd_struct miniomp_wd_t;
 struct miniomp_wd_struct {
-   void (*fn) (void *);     // Function to execute
-   void *fn_data;           // Data for function to execute
-   miniomp_wd_t *parent;    // Parent to notify on finish
-   int components;          // Number of direct childerens created
-   int executed_components; // Number of direct childerens executed
-   miniomp_wd_kind_t type;  // Indicates if the WD represents a task or parallel region
+   void (*fn) (void *);        // Function to execute
+   void *fn_data;              // Data for function to execute
+   miniomp_wd_t *parent;       // Parent to notify on finish
+   int components;             // Number of direct childerens created
+   int executed_components;    // Number of direct childerens executed
+   miniomp_wd_kind_t type;     // Indicates if the WD represents a task or parallel region
+   miniomp_wd_states_t status; // Indicates the status of WD
 };
 
 

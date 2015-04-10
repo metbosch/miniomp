@@ -20,6 +20,7 @@ GOMP_task (void (*fn) (void *), void *data, void (*cpyfn) (void *, void *),
         new_data = (void *)(arg);
     } else {
         new_data = malloc(arg_size);
+        memcpy(new_data, data, arg_size);
     }
     miniomp_wd_t *new_wd = new_miniomp_wd_t(fn, new_data, miniomp_thread_get_wd(miniomp_get_self_thread()), TASK);
     miniomp_thread_team_t *team = miniomp_parallel_get_team(miniomp_get_parallel_region());

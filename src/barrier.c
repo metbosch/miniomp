@@ -50,7 +50,7 @@ void destroy_custom_barrier(miniomp_barrier_t *barrier) {
 bool wait_custom_barrier(miniomp_barrier_t *barrier) {
    DEBUG("Entering in a barrier");
    miniomp_thread_t *self = miniomp_get_self_thread();
-  // miniomp_thread_taskwait(self);
+   miniomp_thread_idle(self);
 
    CHECK_ERR( pthread_mutex_lock(&barrier->mutex), 0 );
    barrier->count++;
