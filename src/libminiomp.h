@@ -8,7 +8,8 @@
 #include <stdint.h>
 #include <pthread.h>
 
-#define MAX(x, y) (x ^ ((x ^ y) & -(x < y)))
+#define MAX(x, y) ((x) ^ (((x) ^ (y)) & -((x) < (y))))
+#define MIN(x, y) ((y) ^ (((x) ^ (y)) & -((x) < (y))))
 
 // Type declaration for Internal Control Variables (ICV) structure
 typedef struct {

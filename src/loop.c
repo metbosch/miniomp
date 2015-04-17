@@ -15,13 +15,13 @@ miniomp_loop_t * new_miniomp_loop_t(long start, long end, long incr, long chunk_
    ret->end = end;
    ret->incr = incr;
    ret->schedule = schedule;
-   ret->chunk_size = chunk_size;
+   ret->chunk_size = ((incr >= 0) == (chunk_size >= 0)) ? chunk_size : -chunk_size;
    ret->next = start;
    return ret;
 }
 
 void destroy_miniomp_loop_t(miniomp_loop_t * loop) {
-   if (loop->next < loop->end) {
+   if ((loop->next < loop->end && loop->incr >= 0) || (loop->next > loop->end && loop->incr < 0)) {
       printf("ERROR: Trying to destroy a loop structure with work (next: %lu, end: %lu)\n", loop->next, loop->end);
    }
    free(loop);
@@ -29,11 +29,16 @@ void destroy_miniomp_loop_t(miniomp_loop_t * loop) {
 
 bool miniomp_loop_dynamic_next(long *istart, long *iend) {
    miniomp_loop_t *loop = *(miniomp_parallel_get_loop(miniomp_get_parallel_region()));
-   long increment = (loop->incr * loop->chunk_size);
+   long increment = loop->chunk_size;
    *istart = __sync_fetch_and_add(&loop->next, increment);
    *iend = *istart + increment;
-   *iend = MIN(*iend, (loop->end));
-   return(*istart < (loop->end));
+   if (loop->incr >= 0) {
+      *iend = MIN(*iend, (loop->end));
+      return(*istart < (loop->end));
+   } else {
+      *iend = MAX(*iend, (loop->end));
+      return(*istart > (loop->end));
+   }
 }
 
 bool

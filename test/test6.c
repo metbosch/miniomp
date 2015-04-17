@@ -15,7 +15,7 @@ void foo() {
         #pragma omp critical
         result++;
     }
-}
+    }
     #pragma omp taskwait
     #pragma omp barrier
     long midle = result;

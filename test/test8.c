@@ -6,9 +6,9 @@
 #include <string.h>
 #include <omp.h>	/* OpenMP */
 
-#define RECURSIVE 2
-#define PARALLEL  2
-#define LEVELS    5
+#define RECURSIVE 3
+#define PARALLEL  4
+#define LEVELS    12
 
 long result=0;
 long result2=0;
@@ -26,7 +26,7 @@ void foo(int level) {
          #pragma omp critical
          ++result2;
       }
-      #pragma omp taskwait
+//      #pragma omp taskwait
    } else {
       for (int i = 0; i < RECURSIVE; ++i) {
          #pragma omp task shared(result, result2)
@@ -45,8 +45,6 @@ int main(int argc, char *argv[]) {
       {
          foo(LEVELS);
       }
-      t1 += result;
-      t2 += result2;
    }
    printf("Result: %ld,\tResult2: %ld\n", result, result2);
 }
