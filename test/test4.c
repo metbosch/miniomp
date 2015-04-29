@@ -34,20 +34,24 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <malloc.h>
-#include "omp.h"
+
+#if _DISPLAY_
+  #include <X11/Xlib.h>
+  #include <X11/Xutil.h>
+  #include <X11/Xos.h>
+#endif
 
 #include <sys/time.h>
 double getusec_() {
-        struct timeval time;
-        gettimeofday(&time, NULL);
-        return ((double)time.tv_sec * (double)1e6 + (double)time.tv_usec);
+      struct timeval time;
+      gettimeofday(&time, NULL);
+      return ((double)time.tv_sec * (double)1e6 + (double)time.tv_usec);
 }
 
 #define START_COUNT_TIME stamp = getusec_();
 #define STOP_COUNT_TIME(_m) stamp = getusec_() - stamp;\
                         stamp = stamp/1e6;\
                         printf ("%s: %0.6fs\n",(_m), stamp);
-
 
 /* Default values for things. */
 #define N           2           /* size of problem space (x, y from -N to N) */
@@ -58,6 +62,12 @@ int row, col; // variables used to traverse the problem space
 typedef struct {
     double real, imag;
 } complex;
+int critical_count = 0, atomic_count = 0;
+
+#if _DISPLAY_
+/* Functions for GUI */
+#include "mandelbrot-gui.h"     /* has setup(), interact() */
+#endif
 
 void mandelbrot(int height, 
                 int width, 
@@ -66,15 +76,24 @@ void mandelbrot(int height,
                 double scale_real, 
                 double scale_imag, 
                 int maxiter, 
+#if _DISPLAY_
+                int setup_return,
+                Display *display, 
+                Window win, 
+                GC gc, 
+                double scale_color,
+                double min_color)
+#else
                 int ** output) 
+#endif
 
 {
-    //#pragma omp parallel 
-    #pragma omp parallel for schedule(dynamic,100)
+    /* Calculate points and save/display */
+    #pragma omp parallel for schedule(dynamic, 10) private(row, col)
     for (row = 0; row < height; ++row) {
-        //#pragma omp for schedule(dynamic,100)
         for (col = 0; col < width; ++col) {
             complex z, c;
+
             z.real = z.imag = 0;
 
             /* Scale display coordinates to actual region  */
@@ -95,13 +114,31 @@ void mandelbrot(int height,
                 ++k;
             } while (lengthsq < (N*N) && k < maxiter);
 
-	    output[row][col]=k;
-	}
-    }
+	    //printf("%d %d %d\n", row, col, k);
+#if _DISPLAY_
+            /* Scale color and display point  */
+#pragma omp critical
+{
+            long color = (long) ((k-1) * scale_color) + min_color;
+            if (setup_return == EXIT_SUCCESS) {
+                XSetForeground (display, gc, color);
+                XDrawPoint (display, win, gc, col, row);
+            }
+//            ++critical_count;
 }
+//           #pragma omp atomic
+//           ++atomic_count;
+#else
+	    output[row][col]=k;
+#endif
+        }
+    }
+//    fprintf(stdout, "Critical calls: %d, atomic: %d\n", critical_count, atomic_count);
+}
+            
 
 int main(int argc, char *argv[]) {
-    int maxiter = 1000;
+    int maxiter = 10000;
     double real_min;
     double real_max;
     double imag_min;
@@ -109,8 +146,17 @@ int main(int argc, char *argv[]) {
     int width = NPIXELS;         /* dimensions of display window */
     int height = NPIXELS;
     double size=N, x0 = 0, y0 = 0;
-    int ** output;
+#if _DISPLAY_
+    Display *display;
+    Window win;
+    GC gc;
+    int setup_return;
+    long min_color = 0, max_color = 0;
+    double scale_color;
+#else 
     FILE *fp = NULL;
+    int ** output;
+#endif
     double scale_real, scale_imag;
 
     /* Process command-line arguments */
@@ -125,15 +171,31 @@ int main(int argc, char *argv[]) {
 	      else if (strcmp(argv[i], "-s")==0) {
 			      size = atof(argv[++i]);
 	      }
+#if !_DISPLAY_
+	      else if (strcmp(argv[i], "-o")==0) {
+    			      if((fp=fopen("mandel.out", "wb"))==NULL) { 
+				      fprintf(stderr, "Unable to open file\n"); 
+				      return EXIT_FAILURE; 
+			      }
+	      }
+#endif
 	      else if (strcmp(argv[i], "-c")==0) {
 			      x0 = atof(argv[++i]); 
 			      y0 = atof(argv[++i]);
 	      }
 	      else {
+#if _DISPLAY_
+		      fprintf(stderr, "Usage: %s [-i maxiter -w windowsize -c x0 y0 -s size]\n", argv[0]);
+#else
 		      fprintf(stderr, "Usage: %s [-o -i maxiter -w windowsize -c x0 y0 -s size]\n", argv[0]);
 		      fprintf(stderr, "       -o to write computed image to disk (default no file generated)\n");
+#endif
 		      fprintf(stderr, "       -i to specify maximum number of iterations at each point (default 1000)\n");
+#if _DISPLAY_
+		      fprintf(stderr, "       -w to specify the size of the display window (default 800x800 pixels)\n");
+#else
 		      fprintf(stderr, "       -w to specify the size of the image to compute (default 800x800 elements)\n");
+#endif
 		      fprintf(stderr, "       -c to specify the center x0+iy0 of the square to compute (default origin)\n");
 		      fprintf(stderr, "       -s to specify the size of the square to compute (default 2, i.e. size 4 by 4)\n");
         	      return EXIT_FAILURE;
@@ -153,29 +215,64 @@ int main(int argc, char *argv[]) {
     fprintf(stdout, "maximum iterations = %d\n", maxiter);
     fprintf(stdout, "\n");
 
+#if _DISPLAY_
+    /* Initialize for graphical display */
+    setup_return = 
+        setup(width, height, &display, &win, &gc, &min_color, &max_color);
+    if (setup_return != EXIT_SUCCESS) {
+        fprintf(stderr, "Unable to initialize display, continuing\n");
+        return EXIT_FAILURE;
+    }
+#else
     output = malloc(height*sizeof(int *));
     for (int row = 0; row < height; ++row)
 	    output[row] = malloc(width*sizeof(int));
+#endif
 
     /* Compute factors to scale computational region to window */
     scale_real = (double) (real_max - real_min) / (double) width;
     scale_imag = (double) (imag_max - imag_min) / (double) height;
 
-    /* Start timing */
-    double stamp;
-    START_COUNT_TIME;
+#if _DISPLAY_
+    /* Compute factor for color scaling */
+    scale_color = (double) (max_color - min_color) / (double) (maxiter - 1);
+#endif
 
+    /* Start timing */
+//    double stamp;
+//    START_COUNT_TIME;
+
+#if _DISPLAY_
+    mandelbrot(height,width,real_min, imag_min, scale_real, scale_imag, maxiter, 
+               setup_return, display, win, gc, scale_color, min_color); 
+#else
     mandelbrot(height,width,real_min, imag_min, scale_real, scale_imag, maxiter, 
                output); 
+#endif
 
     /* End timing  */
-    STOP_COUNT_TIME("Total execution time");
+//    STOP_COUNT_TIME("Total execution time");
 
     /* Be sure all output is written */
+#if _DISPLAY_
+    if (setup_return == EXIT_SUCCESS) {
+        XFlush (display);
+    }
+#else
     if (fp != NULL)
     {
-        if(fwrite(output, sizeof(int), height*width, fp) != height*width) { 
-		fprintf(stderr, "Output file not written correctly\n"); 
-	}
+        for (int row = 0; row < height; ++row)
+           if(fwrite(output[row], sizeof(int), width, fp) != width)
+               fprintf(stderr, "Output file not written correctly\n");
     }
+#endif
+
+#if _DISPLAY_
+    /* Wait for user response, then exit program */
+    if (setup_return == EXIT_SUCCESS) {
+        interact(display, &win, width, height,
+                real_min, real_max, imag_min, imag_max);
+    }
+    return EXIT_SUCCESS;
+#endif
 }

@@ -11,19 +11,19 @@ long result=0;
 void foo() {
 #pragma omp parallel 
     {
-    #pragma omp for 
+    #pragma omp for schedule(dynamic,-1)
     for (long i = 0; i < 10; i++) {
-	#pragma omp atomic
+        #pragma omp atomic
         result++;
     }
 
-    #pragma omp for schedule(dynamic,5) 
-    for (long i = 10; i > 0; i--)
+    #pragma omp for schedule(dynamic,-1) 
+    for (long i = 10; i < 0; i--)
 	#pragma omp critical
         result++;
 
     #pragma omp for schedule(dynamic,1) nowait
-    for (long i = 0; i < 10; i++)
+    for (long i = 10; i > 0; i--)
 	#pragma omp atomic
         result++;
 

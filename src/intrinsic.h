@@ -1,10 +1,19 @@
-// OpenMP intrinsics
+#ifndef __MINIOMP_INTRINSIC_H__
+#define __MINIOMP_INTRINSIC_H__
 
-// Sets the number of threads to be used in the following parallel regions
+/**
+  * Sets the number of threads to be used in the following parallel regions
+  */
 void omp_set_num_threads (int n);
 
-// Returns the number of threads in the current parallel region
+/**
+  * Returns the number of threads in the current parallel region
+  */
 int omp_get_num_threads (void);
 
-// Returns the identifier of the invoking thread within the team
+/**
+  * Returns the identifier of the invoking thread within the team
+  */
 int omp_get_thread_num (void);
+
+#endif

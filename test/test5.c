@@ -92,7 +92,6 @@ void mandelbrot(int height,
     for (row = 0; row < height; ++row) {
         #pragma omp task private(col) firstprivate(row)
 	{
-	printf("Task %d\n", row);
         for (col = 0; col < width; ++col) {
             complex z, c;
 
@@ -239,8 +238,8 @@ int main(int argc, char *argv[]) {
 #endif
 
     /* Start timing */
-    double stamp;
-    START_COUNT_TIME;
+//    double stamp;
+//    START_COUNT_TIME;
 
 #pragma omp parallel
 #pragma omp single
@@ -253,7 +252,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     /* End timing  */
-    STOP_COUNT_TIME("Total execution time");
+//    STOP_COUNT_TIME("Total execution time");
 
     /* Be sure all output is written */
 #if _DISPLAY_

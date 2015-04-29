@@ -1,17 +1,33 @@
+#ifndef __MINIOMP_SINGLE_C__
+#define __MINIOMP_SINGLE_C__
 #include "libminiomp.h"
 #include "intrinsic.h"
+#include "specifickey.h"
+#include "parallel.h"
 
-// Declaratiuon of global variable for single work descriptor
-miniomp_single_t miniomp_single;
+bool miniomp_single_first() {
+   miniomp_parallel_t *region = miniomp_get_parallel_region();
+   unsigned prev = __sync_fetch_and_add(miniomp_parallel_get_single_count(region), 1);
+   if (prev == (miniomp_parallel_get_num_threads(region) - 1)) {
+      *(miniomp_parallel_get_single_count(region)) = 0;
+   }
+   return !prev;
+}
 
-/* This routine is called when first encountering a SINGLE construct. 
-   Returns true if this is the thread that should execute the clause.  */
+bool miniomp_single_last() {
+   miniomp_parallel_t *region = miniomp_get_parallel_region();
+   unsigned prev = __sync_fetch_and_add(miniomp_parallel_get_single_count(region), 1);
+   if (prev == (miniomp_parallel_get_num_threads(region) - 1)) {
+      *(miniomp_parallel_get_single_count(region)) = 0;
+      return true;
+   }
+   return false;
+}
 
 bool
 GOMP_single_start (void)
 {
-  printf("TBI: Entering into single, but don't know who else arrived so I proceed\n");
-  return(true);
+   return miniomp_single_first();
 }
 
-
+#endif

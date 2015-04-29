@@ -1,58 +1,87 @@
+#ifndef __MINIOMP_LOOP_C__
+#define __MINIOMP_LOOP_C__
 #include "libminiomp.h"
 #include "intrinsic.h"
+#include "loop.h"
+#include "single.h"
+#include "specifickey.h"
+#include "parallel.h"
 
-// Declaratiuon of global variable for loop work descriptor
-miniomp_loop_t miniomp_loop;
+#define MIN(x, y) ((y) ^ (((x) ^ (y)) & -((x) < (y))))
 
-/* The *_next routines are called when the thread completes processing of 
-   the iteration block currently assigned to it.  If the work-share 
-   construct is bound directly to a parallel construct, then the iteration
-   bounds may have been set up before the parallel.  In which case, this
-   may be the first iteration for the thread.
+miniomp_loop_t * new_miniomp_loop_t(long start, long end, long incr, long chunk_size, int schedule) {
+   miniomp_loop_t *ret = (miniomp_loop_t *)(malloc(sizeof(miniomp_loop_t)));
+   ret->start = start;
+   ret->end = end;
+   ret->incr = incr;
+   ret->schedule = schedule;
+   ret->chunk_size = ((incr >= 0) == (chunk_size >= 0)) ? chunk_size : -chunk_size;
+   ret->next = start;
+   return ret;
+}
 
-   Returns true if there is work remaining to be performed; *ISTART and
-   *IEND are filled with a new iteration block.  Returns false if all work
-   has been assigned.  */
+void destroy_miniomp_loop_t(miniomp_loop_t * loop) {
+   if ((loop->next < loop->end && loop->incr >= 0) || (loop->next > loop->end && loop->incr < 0)) {
+      printf("ERROR: Trying to destroy a loop structure with work (next: %lu, end: %lu)\n", loop->next, loop->end);
+   }
+   free(loop);
+}
+
+bool miniomp_loop_dynamic_next(long *istart, long *iend) {
+   miniomp_loop_t *loop = *(miniomp_parallel_get_loop(miniomp_get_parallel_region()));
+   long increment = loop->chunk_size;
+   *istart = __sync_fetch_and_add(&loop->next, increment);
+   *iend = *istart + increment;
+   if (loop->incr >= 0) {
+      *iend = MIN(*iend, (loop->end));
+      return(*istart < (loop->end));
+   } else {
+      *iend = MAX(*iend, (loop->end));
+      return(*istart > (loop->end));
+   }
+}
 
 bool
 GOMP_loop_dynamic_next (long *istart, long *iend) {
-  printf("TBI: Asking for more iterations? I gave you all at the beginning, no more left ...\n");
-  return(false);
+   return miniomp_loop_dynamic_next(istart, iend);
 }
-
-/* The *_start routines are called when first encountering a loop construct
-   that is not bound directly to a parallel construct.  The first thread 
-   that arrives will create the work-share construct; subsequent threads
-   will see the construct exists and allocate work from it.
-
-   START, END, INCR are the bounds of the loop; CHUNK_SIZE is the
-   scheduling parameter. 
-
-   Returns true if there's any work for this thread to perform.  If so,
-   *ISTART and *IEND are filled with the bounds of the iteration block
-   allocated to this thread.  Returns false if all work was assigned to
-   other threads prior to this thread's arrival.  */
 
 bool
 GOMP_loop_dynamic_start (long start, long end, long incr, long chunk_size,
-                         long *istart, long *iend)
+long *istart, long *iend)
 {
-  printf("TBI: What a mess! Starting a non-static for worksharing construct and dont know what to do, I'll take it all\n");
-  *istart = start;
-  *iend = end;
-  return(true);
-}
-
-/* The GOMP_loop_end* routines are called after the thread is told that
-   all loop iterations are complete.  The first version synchronize
-   all threads; the nowait version does not. */
-
-void
-GOMP_loop_end (void) {
-  printf("TBI: Finishing a for worksharing construct with non static schedule\n");
+   miniomp_parallel_t *region = miniomp_get_parallel_region();
+   if (miniomp_single_first()) {
+      *(miniomp_parallel_get_loop(region)) = new_miniomp_loop_t(start, end, incr, chunk_size, ws_DYNAMIC);
+      __sync_synchronize();
+   }
+   miniomp_parallel_barrier_wait(region);
+   return miniomp_loop_dynamic_next(istart, iend);
 }
 
 void
-GOMP_loop_end_nowait (void) {
-  printf("TBI: Finishing a for worksharing construct with non static schedule, with nowait clause\n");
+GOMP_loop_end (void)
+{
+   miniomp_parallel_t *region = miniomp_get_parallel_region();
+   miniomp_loop_t **loop = miniomp_parallel_get_loop(region);
+   if (miniomp_parallel_barrier_wait(region)) {
+      destroy_miniomp_loop_t(*loop);
+      *loop = NULL;
+      __sync_synchronize();
+   }
+   miniomp_parallel_barrier_wait(region);
 }
+
+void
+GOMP_loop_end_nowait (void)
+{
+   if (miniomp_single_last()) {
+      miniomp_parallel_t *region = miniomp_get_parallel_region();
+      miniomp_loop_t **loop = miniomp_parallel_get_loop(region);
+      destroy_miniomp_loop_t(*loop);
+      *loop = NULL;
+      __sync_synchronize();
+   }
+}
+
+#endif
