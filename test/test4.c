@@ -89,7 +89,7 @@ void mandelbrot(int height,
 
 {
     /* Calculate points and save/display */
-    #pragma omp parallel for schedule(dynamic,1)
+    #pragma omp parallel for schedule(dynamic, 10) private(row, col)
     for (row = 0; row < height; ++row) {
         for (col = 0; col < width; ++col) {
             complex z, c;
@@ -124,16 +124,16 @@ void mandelbrot(int height,
                 XSetForeground (display, gc, color);
                 XDrawPoint (display, win, gc, col, row);
             }
-            ++critical_count;
+//            ++critical_count;
 }
-           #pragma omp atomic
-           ++atomic_count;
+//           #pragma omp atomic
+//           ++atomic_count;
 #else
 	    output[row][col]=k;
 #endif
         }
     }
-    fprintf(stdout, "Critical calls: %d, atomic: %d\n", critical_count, atomic_count);
+//    fprintf(stdout, "Critical calls: %d, atomic: %d\n", critical_count, atomic_count);
 }
             
 
@@ -242,8 +242,6 @@ int main(int argc, char *argv[]) {
 //    double stamp;
 //    START_COUNT_TIME;
 
-#pragma omp parallel
-#pragma omp single
 #if _DISPLAY_
     mandelbrot(height,width,real_min, imag_min, scale_real, scale_imag, maxiter, 
                setup_return, display, win, gc, scale_color, min_color); 

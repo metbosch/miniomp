@@ -92,7 +92,6 @@ void mandelbrot(int height,
     for (row = 0; row < height; ++row) {
         #pragma omp task private(col) firstprivate(row)
 	{
-	printf("*");
         for (col = 0; col < width; ++col) {
             complex z, c;
 
